@@ -88,6 +88,13 @@ button:hover{
 
 <h1>Focus Timer</h1>
 
+<div id="mathBox" style="display:none; margin-top:15px; padding:15px; background:#444; border-radius:10px;">
+    <div id="mathQuestion" style="margin-bottom:10px;"></div>
+    <input id="mathInput" type="number" style="padding:5px; width:100px;">
+    <button onclick="checkMath()">Confirm</button>
+    <button onclick="cancelMath()">Cancel</button>
+</div>
+
 <div id="focusBox" class="timerBox">
     <h2>Focus</h2>
     <div id="focusTime" class="time">00:00:00</div>
@@ -124,6 +131,8 @@ Ratio (Focus / Rest):
 </div>
 
 <script>
+
+let mathAnswer = null;
 
 let data={
     focusSeconds:0,
@@ -266,35 +275,48 @@ function pauseTimer(){
     }
 }
 
-function clearTimers(){
+function checkMath(){
 
-    let a=Math.floor(Math.random()*10)+1;
-    let b=Math.floor(Math.random()*10)+1;
-
-    let answer=prompt(
-        `Solve this to clear timers:\n${a} + ${b} = ?`
+    let input = parseInt(
+        document.getElementById("mathInput").value
     );
 
-    if(answer===null){
-        return;
+    if(input === mathAnswer){
+
+        data = {
+            focusSeconds:0,
+            restSeconds:0,
+            active:null,
+            lastTimestamp:null
+        };
+
+        save();
+        updateDisplay();
+
+        document.getElementById("mathBox").style.display = "none";
+    } else {
+        document.getElementById("mathQuestion").innerText =
+            "Wrong answer, try again.";
     }
+}
 
-    if(parseInt(answer)!==(a+b)){
-        alert("Wrong answer. Timers not cleared.");
-        return;
-    }
+function cancelMath(){
+    document.getElementById("mathBox").style.display = "none";
+}
 
-    data={
-        focusSeconds:0,
-        restSeconds:0,
-        active:null,
-        lastTimestamp:null
-    };
+function clearTimers(){
 
-    save();
-    updateDisplay();
+    let a = Math.floor(Math.random()*10)+1;
+    let b = Math.floor(Math.random()*10)+1;
 
-    alert("Timers cleared.");
+    mathAnswer = a + b;
+
+    document.getElementById("mathQuestion").innerText =
+        `Solve to clear timers: ${a} + ${b} = ?`;
+
+    document.getElementById("mathInput").value = "";
+
+    document.getElementById("mathBox").style.display = "block";
 }
 
 function tick(){
