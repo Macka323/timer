@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Focus / Rest Timer</title>
+
+<style>
+body{
+    font-family: Arial,sans-serif;
+    background:#1e1e1e;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+
+.container{
+    background:#2d2d2d;
+    padding:30px;
+    border-radius:15px;
+    width:420px;
+    text-align:center;
+    box-shadow:0 0 20px rgba(0,0,0,0.4);
+}
+
+.timerBox{
+    margin:20px 0;
+    padding:15px;
+    background:#3a3a3a;
+    border-radius:10px;
+}
+
+.time{
+    font-size:2em;
+    margin-top:10px;
+}
+
+.active{
+    outline:3px solid #4CAF50;
+}
+
+button{
+    margin:5px;
+    padding:10px 16px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+.focusBtn{
+    background:#4CAF50;
+    color:white;
+}
+
+.restBtn{
+    background:#2196F3;
+    color:white;
+}
+
+.pauseBtn{
+    background:#ff9800;
+    color:white;
+}
+
+.clearBtn{
+    background:#f44336;
+    color:white;
+}
+
+.ratio{
+    margin-top:20px;
+    font-size:1.3em;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Focus Timer</h1>
+
+<div id="focusBox" class="timerBox">
+    <h2>Focus</h2>
+    <div id="focusTime" class="time">00:00:00</div>
+</div>
+
+<div id="restBox" class="timerBox">
+    <h2>Rest</h2>
+    <div id="restTime" class="time">00:00:00</div>
+</div>
+
+<div>
+<button class="focusBtn" onclick="startTimer('focus')">
+Start Focus
+</button>
+
+<button class="restBtn" onclick="startTimer('rest')">
+Start Rest
+</button>
+
+<button class="pauseBtn" onclick="pauseTimer()">
+Pause
+</button>
+
+<button class="clearBtn" onclick="clearTimers()">
+Clear Timers
+</button>
+</div>
+
+<div class="ratio">
+Ratio (Focus / Rest):
+<span id="ratio">0</span>
+</div>
+
+</div>
+
+<script>
+
+let data={
+    focusSeconds:0,
+    restSeconds:0,
+    active:null,
+    lastTimestamp:null
+};
+
+function save(){
+    localStorage.setItem(
+        "focusTimerData",
+        JSON.stringify(data)
+    );
+}
+
+function load(){
+
+    let saved=localStorage.getItem("focusTimerData");
+
+    if(saved){
+        data=JSON.parse(saved);
+    }
+
+    // Recover time passed while browser closed
+    if(data.active && data.lastTimestamp){
+
+        let now=Date.now();
+        let elapsed=Math.floor(
+            (now-data.lastTimestamp)/1000
+        );
+
+        if(data.active==="focus"){
+            data.focusSeconds+=elapsed;
+        }
+
+        if(data.active==="rest"){
+            data.restSeconds+=elapsed;
+        }
+
+        data.lastTimestamp=now;
+        save();
+    }
+}
+
+function formatTime(seconds){
+
+    let h=Math.floor(seconds/3600)
+        .toString()
+        .padStart(2,"0");
+
+    let m=Math.floor((seconds%3600)/60)
+        .toString()
+        .padStart(2,"0");
+
+    let s=(seconds%60)
+        .toString()
+        .padStart(2,"0");
+
+    return `${h}:${m}:${s}`;
+}
+
+function updateDisplay(){
+
+    document.getElementById(
+        "focusTime"
+    ).innerText=
+    formatTime(data.focusSeconds);
+
+    document.getElementById(
+        "restTime"
+    ).innerText=
+    formatTime(data.restSeconds);
+
+    let ratio=0;
+
+    if(data.restSeconds>0){
+        ratio=(
+            data.focusSeconds/
+            data.restSeconds
+        ).toFixed(2);
+    }
+
+    document.getElementById(
+        "ratio"
+    ).innerText=ratio;
+
+    document.getElementById(
+        "focusBox"
+    ).classList.remove("active");
+
+    document.getElementById(
+        "restBox"
+    ).classList.remove("active");
+
+    if(data.active==="focus"){
+        document.getElementById(
+            "focusBox"
+        ).classList.add("active");
+    }
+
+    if(data.active==="rest"){
+        document.getElementById(
+            "restBox"
+        ).classList.add("active");
+    }
+}
+
+function startTimer(type){
+
+    // Switch active timer
+    data.active=type;
+    data.lastTimestamp=Date.now();
+
+    save();
+    updateDisplay();
+}
+
+function pauseTimer(){
+
+    if(data.active){
+
+        let elapsed=Math.floor(
+            (Date.now()-data.lastTimestamp)
+            /1000
+        );
+
+        if(data.active==="focus"){
+            data.focusSeconds+=elapsed;
+        }
+
+        if(data.active==="rest"){
+            data.restSeconds+=elapsed;
+        }
+
+        data.active=null;
+        data.lastTimestamp=null;
+
+        save();
+        updateDisplay();
+    }
+}
+
+function clearTimers(){
+
+    data={
+        focusSeconds:0,
+        restSeconds:0,
+        active:null,
+        lastTimestamp:null
+    };
+
+    save();
+    updateDisplay();
+}
+
+function tick(){
+
+    if(data.active){
+
+        let now=Date.now();
+
+        let elapsed=Math.floor(
+            (now-data.lastTimestamp)/1000
+        );
+
+        if(elapsed>0){
+
+            if(data.active==="focus"){
+                data.focusSeconds+=elapsed;
+            }
+
+            if(data.active==="rest"){
+                data.restSeconds+=elapsed;
+            }
+
+            data.lastTimestamp=now;
+
+            save();
+        }
+    }
+
+    updateDisplay();
+}
+
+load();
+updateDisplay();
+
+setInterval(tick,1000);
+
+</script>
+
+</body>
+</html>
